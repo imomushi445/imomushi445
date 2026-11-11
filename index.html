@@ -213,6 +213,7 @@ h1{
 .summary dt{font-size:.75rem;color:var(--muted);font-weight:700;letter-spacing:.06em}
 .summary dd{margin:0;font-weight:900;font-size:1.2rem}
 .owned{font-size:.9rem;color:var(--muted)}
+.hint{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;border-top:1px dashed var(--line);padding-top:12px;line-height:1.8}
 .end-actions{display:flex;flex-wrap:wrap;gap:12px}
 
 @media (max-width:480px){
@@ -300,6 +301,7 @@ h1{
       <p class="etext" id="endText"></p>
       <dl class="summary" id="endSummary"></dl>
       <p class="owned" id="endItems"></p>
+      <p class="hint" id="endHint"></p>
       <div class="end-actions">
         <button class="cta" id="retryBtn" type="button">もう一度あそぶ</button>
         <button class="ghost" id="toTitleBtn" type="button">タイトルへ</button>
@@ -319,7 +321,7 @@ const TIME_LIMIT = 30;
 const LAST_DAY = 30;
 
 const ITEMS = {
-  coffee:    { name: '雪印コーヒーサーバー',     stat: 'food',   text: '食料の最大値 +10' },
+  coffee:    { name: '雪印コーヒーサーバー',     stat: null,     text: '毎日の食料の消費量 −1' },
   trophy:    { name: 'トロフィー',               stat: 'wealth', text: '財産の最大値 +10' },
   guragura:  { name: 'あたしンちグラグラゲーム', stat: 'sat',    text: '満足度の最大値 +10' },
   statue:    { name: 'ジミィ像',                 stat: 'sec',    text: '治安の最大値 +10' }
@@ -368,7 +370,7 @@ const EVENTS = [
   { id: 'mercenary', title: '傭兵',
     text: ['あなたのもとに武装した集団がやってくる。話によれば、傭兵を雇って島に住まわせれば治安を守ってくれるそうだ。'],
     choices: [
-      { label: '承諾する', result: ['傭兵達は島に住むようになった。多少住民を脅かしたりしているようだが、仕方ないだろう。'], fx: { wealth: -4, sat: -4, sec: 4 } },
+      { label: '承諾する', result: ['傭兵達は島に住むようになった。多少住民を脅かしたりしているようだが、仕方ないだろう。'], fx: { res: 8, wealth: -4, sat: -4, sec: 4 } },
       { label: '断る', result: ['武装した集団は島で略奪を行うようになった。あなたは『何が治安を守るだ』と思いながら奴らを追い出した。'], fx: { sec: -4 } }
     ] },
 
@@ -468,7 +470,7 @@ const EVENTS = [
     choices: [
       { label: '家に帰る', result: ['『さあ乗りな。家が恋しいだろう。』'], end: 'escape' },
       { label: '補給物資を売りつけて帰ってもらう', result: ['『ありがとよ！』'], fx: { food: -4, wealth: 6 } },
-      { label: 'ヘリコプターを奪う', result: ['パイロットを殺害し、ヘリを分解して金に換えた。'], fx: { wealth: 10, sec: -8 } }
+      { label: 'ヘリコプターを奪う', result: ['パイロットを殺害し、ヘリを分解して金に換えた。'], fx: { wealth: 10, sec: -8 }, disable: true }
     ] },
 
   { id: 'invest', title: '儲け話にはご用心',
@@ -484,7 +486,7 @@ const EVENTS = [
     choices: [
       { label: '撫でる', result: ['『ﾁｮﾜﾖ！』ｽﾋﾟｷはかわいいね。'], fx: { sat: 4 } },
       { label: 'ﾎﾊﾞｷﾞを買う', result: ['『ﾁｮﾜﾖ！』ｽﾋﾟｷはかわいいね。'], fx: { wealth: -2, food: 4 } },
-      { label: 'ﾎﾊﾞｷﾞを奪う', result: ['『ｳﾜｱｱｱｱ!ｽﾋﾟｷﾃﾞﾙｼﾞﾊﾞｾﾞﾖ!!』ﾎﾊﾞｷﾞを置いて逃げていった。'], fx: { food: 6, sat: -2, sec: -4 } }
+      { label: 'ﾎﾊﾞｷﾞを奪う', result: ['『ｳﾜｱｱｱｱ!ｽﾋﾟｷﾃﾞﾙｼﾞﾊﾞｾﾞﾖ!!』ﾎﾊﾞｷﾞを置いて逃げていった。'], fx: { food: 6, sat: -2, sec: -4 }, disable: true }
     ] },
 
   { id: 'creator', title: '製作者からの贈り物', rare: true, once: true,
@@ -531,7 +533,15 @@ const ENDINGS = {
   civ:      { name: '文明エンド',       text: '我々の勢力はもはや国というより文明と呼ぶべき規模になった。この波はいずれ他の国家をも飲み込むだろう。' },
   island:   { name: '無人島エンド',     text: '我々はこの先も平和に無人島で生活していった────' }
 };
-const ENDING_ORDER = ['island', 'escape', 'kingdom', 'dictator', 'civ', 'res', 'food', 'wealth', 'sat', 'sec'];
+const HINTS = [
+  '住民、満足度、治安30以上の条件を満たして30日目を終えると…？',
+  '住民が一定数に達すると毎ターンの食料の消費量が増えるぞ',
+  '満足度と治安を上げる方法は限られているぞ',
+  '財産は0にならない限りエンディング分岐とは関係無いからじゃんじゃん使おう',
+  'イベント次第で特殊なアイテムが手に入るぞ',
+  'プレイしてくれてありがとう！'
+];
+const ENDING_ORDER =['island', 'escape', 'kingdom', 'dictator', 'civ', 'res', 'food', 'wealth', 'sat', 'sec'];
 
 function newState() {
   return {
@@ -542,7 +552,10 @@ function newState() {
   };
 }
 
-function consumption(S) { return 1 + Math.floor(S.res / 20); }
+function consumption(S) {
+  const base = 1 + Math.floor(S.res / 20);
+  return Math.max(0, base - (S.items.includes('coffee') ? 1 : 0));
+}
 
 function zeroStat(S) {
   for (const k of KEYS) if (S[k] <= 0) return k;
@@ -577,7 +590,7 @@ function resolve(S, index, timedOut) {
   if (c.item) {
     const it = ITEMS[c.item];
     S.items.push(c.item);
-    S.max[it.stat] += 10;
+    if (it.stat) S.max[it.stat] += 10;
     out.item = it;
   }
   if (c.invest) S.invested = true;
@@ -805,7 +818,7 @@ function renderResult(out) {
   });
   if (out.item) {
     chips.push('<li class="chip item"><span>' + out.item.name + 'を入手</span><b>' +
-      LABEL[out.item.stat] + 'の最大値 +10</b></li>');
+      out.item.text + '</b></li>');
   }
   const html =
     (out.timedOut ? '<p class="timeout">時間切れ。一番上の選択肢が選ばれた。</p>' : '') +
@@ -847,6 +860,8 @@ function showEnding(id) {
   $('endItems').textContent = S.items.length
     ? '所持品: ' + S.items.map(i => ITEMS[i].name).join('、')
     : '所持品: なし';
+  $('endHint').innerHTML = '<span class="meta-k">ヒント</span><span>' +
+    HINTS[Math.floor(Math.random() * HINTS.length)] + '</span>';
   show('scr-end');
   $('retryBtn').focus({ preventScroll: true });
 }
