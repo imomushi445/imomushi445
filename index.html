@@ -1,0 +1,880 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ジミィの開拓島</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Maru+Gothic:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* Layout: one centered column (max 720px). Game screen runs top to bottom: day + timer -> five stat rows -> items -> event -> choices -> result. Title and ending screens share the same column. */
+:root{
+  --bg:#e4f2ef;
+  --sky:#c4e8ee;
+  --surface:#ffffff;
+  --surface-2:#eef8f6;
+  --ink:#0f2f38;
+  --muted:#52737b;
+  --line:#bcd9d4;
+  --sea:#12788a;
+  --sun:#f08a24;
+  --sun-ink:#1d1203;
+  --up:#1b7f45;
+  --down:#c0392b;
+  --sand:#efd9a0;
+  --leaf:#2f8f5b;
+  --c-res:#1a8798;
+  --c-food:#4c9a2f;
+  --c-wealth:#cf9410;
+  --c-sat:#d4577f;
+  --c-sec:#5568d4;
+  --font-display:'Dela Gothic One','Hiragino Maru Gothic ProN','Yu Gothic','Meiryo',sans-serif;
+  --font-body:'Zen Maru Gothic','Hiragino Maru Gothic ProN','Yu Gothic','Meiryo',sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0a1f26; --sky:#123c48; --surface:#10303a; --surface-2:#0d2931; --ink:#e2f2f0; --muted:#8fb2b8; --line:#23505b;
+    --sea:#4cc3d3; --sun:#ffa84d; --sun-ink:#1d1203; --up:#5fd58b; --down:#ff8a7a; --sand:#b79a55; --leaf:#4fb07c;
+    --c-res:#4cc3d3; --c-food:#8fd46a; --c-wealth:#f0c04a; --c-sat:#f58aac; --c-sec:#8b9bff;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0a1f26; --sky:#123c48; --surface:#10303a; --surface-2:#0d2931; --ink:#e2f2f0; --muted:#8fb2b8; --line:#23505b;
+  --sea:#4cc3d3; --sun:#ffa84d; --sun-ink:#1d1203; --up:#5fd58b; --down:#ff8a7a; --sand:#b79a55; --leaf:#4fb07c;
+  --c-res:#4cc3d3; --c-food:#8fd46a; --c-wealth:#f0c04a; --c-sat:#f58aac; --c-sec:#8b9bff;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font-body);
+  font-size:16px;
+  line-height:1.7;
+  padding-block:20px 32px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+.app{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.app > *{min-width:0}
+h1,h2,h3,p,ul,dl{margin:0}
+ul{padding:0;list-style:none}
+button{font-family:inherit}
+:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
+
+/* ---------- shared ---------- */
+.cta{
+  font:700 1.05rem var(--font-body);
+  background:var(--sun);color:var(--sun-ink);
+  border:0;border-radius:10px;padding:12px 24px;min-height:48px;cursor:pointer;
+}
+.cta:hover{filter:brightness(1.06)}
+.cta:active{transform:translateY(1px)}
+.ghost{
+  font:500 .95rem var(--font-body);
+  background:transparent;color:var(--ink);
+  border:2px solid var(--line);border-radius:10px;padding:10px 18px;min-height:48px;cursor:pointer;
+}
+.ghost:hover{border-color:var(--sea)}
+.tag{
+  display:inline-block;font-size:.75rem;font-weight:700;letter-spacing:.08em;
+  padding:2px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);border:1px solid var(--line);
+}
+.tag.rare{color:var(--sun-ink);background:var(--sun);border-color:var(--sun)}
+.tag.forced{color:var(--surface);background:var(--sea);border-color:var(--sea)}
+
+/* ---------- title ---------- */
+.hero{border-radius:16px;overflow:hidden;background:var(--sky);border:1px solid var(--line)}
+.hero svg{display:block;width:100%;height:auto}
+.hero .sea{fill:var(--sea)}
+.hero .wave{stroke:var(--sky);stroke-width:2.5;fill:none;opacity:.7}
+.hero .sand{fill:var(--sand)}
+.hero .trunk{stroke:#8a5a2b;fill:none}
+.hero .leaf{fill:var(--leaf)}
+.hero .sun{fill:var(--sun)}
+.hero-copy{padding:4px 20px 22px;background:var(--sky)}
+.hero-copy .tag{background:var(--surface);}
+h1{
+  font-family:var(--font-display);font-weight:400;
+  font-size:clamp(2rem,9vw,3.2rem);line-height:1.15;margin-top:8px;text-wrap:balance;
+}
+.hero-copy p{color:var(--muted);margin-top:4px}
+.rules{
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.rules h2{font-family:var(--font-display);font-weight:400;font-size:1.05rem}
+.rules li{padding-left:1.2em;position:relative}
+.rules li::before{content:"";position:absolute;left:.2em;top:.8em;width:.5em;height:.5em;border-radius:2px;background:var(--sun)}
+.start-row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.collection h2{font-family:var(--font-display);font-weight:400;font-size:1.05rem;margin-bottom:8px}
+.collection h2 small{font-family:var(--font-body);color:var(--muted);font-size:.85rem;margin-left:6px}
+.endgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.endgrid li{
+  border:1px solid var(--line);border-radius:10px;padding:8px 12px;background:var(--surface);
+  font-size:.9rem;min-height:42px;display:flex;align-items:center;
+}
+.endgrid li.locked{color:var(--muted);background:transparent;border-style:dashed}
+
+/* ---------- game ---------- */
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.day{display:flex;align-items:baseline;gap:6px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.day-label{font-size:.75rem;font-weight:700;letter-spacing:.14em;color:var(--muted)}
+.day b{font-family:var(--font-display);font-weight:400;font-size:2rem;line-height:1}
+.day span:last-child{color:var(--muted)}
+.timer{flex:1;min-width:140px;display:flex;align-items:center;gap:10px;transition:opacity .2s}
+.timer.off{opacity:.35}
+.timer-bar{flex:1;height:14px;border-radius:7px;background:var(--line);overflow:hidden}
+.timer-bar i{display:block;height:100%;width:100%;background:var(--sea);transform-origin:left center;border-radius:7px}
+.timer.low .timer-bar i{background:var(--down)}
+.timer.low #timerNum{color:var(--down)}
+#timerNum{min-width:2.2ch;text-align:right;font-weight:900;font-size:1.25rem;font-variant-numeric:tabular-nums}
+.ticks{display:grid;grid-template-columns:repeat(30,1fr);gap:2px}
+.ticks i{height:6px;border-radius:2px;background:var(--line)}
+.ticks i.done{background:var(--sea)}
+.ticks i.now{background:var(--sun)}
+
+.stats{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:2px}
+.stat{display:grid;grid-template-columns:4.4em 1fr 5.8em;align-items:center;gap:10px;padding:6px 8px;border-radius:8px}
+.st-name{font-weight:700}
+.stat.danger .st-name::after{content:" !";color:var(--down)}
+.st-bar{height:12px;border-radius:6px;background:var(--line);overflow:hidden}
+.st-bar i{display:block;height:100%;background:var(--c);border-radius:6px;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+.st-val{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.st-val b{font-size:1.15rem}
+.st-val small{color:var(--muted);margin-left:3px;font-size:.8rem}
+.stat.danger .st-val b{color:var(--down)}
+.stat.up{animation:flash-up 1.2s ease-out}
+.stat.down{animation:flash-down 1.2s ease-out}
+@keyframes flash-up{from{background:color-mix(in srgb,var(--up) 25%,transparent)}to{background:transparent}}
+@keyframes flash-down{from{background:color-mix(in srgb,var(--down) 25%,transparent)}to{background:transparent}}
+@keyframes pulse{from{opacity:1}to{opacity:.45}}
+.stat.danger .st-bar i{animation:pulse .8s infinite alternate}
+
+.items{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between;font-size:.88rem}
+.items > div{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-width:0}
+.meta-k{font-size:.75rem;font-weight:700;letter-spacing:.08em;color:var(--muted)}
+.items ul{display:flex;flex-wrap:wrap;gap:6px}
+.items li{border:1px solid var(--line);border-radius:8px;padding:2px 10px;background:var(--surface)}
+.items li small{color:var(--muted);margin-left:6px}
+.items li.none{border:0;background:transparent;padding:0;color:var(--muted)}
+.cons-now b{font-variant-numeric:tabular-nums}
+
+.event{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.event h2{font-family:var(--font-display);font-weight:400;font-size:1.5rem;line-height:1.3;text-wrap:balance}
+#evText{display:flex;flex-direction:column;gap:8px;line-height:1.85}
+.choices{display:flex;flex-direction:column;gap:10px}
+.choice{
+  display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;text-align:left;width:100%;
+  background:var(--surface);color:var(--ink);border:2px solid var(--line);border-radius:12px;
+  padding:12px 14px;min-height:56px;cursor:pointer;font-size:1rem;line-height:1.5;
+}
+.choice:hover{border-color:var(--sea)}
+.choice:disabled{cursor:default;color:var(--ink)}
+.choice.picked{border-color:var(--sea)}
+.key{
+  width:28px;height:28px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);
+  display:grid;place-items:center;font-weight:700;font-size:.9rem;font-variant-numeric:tabular-nums;color:var(--muted);
+}
+.cbody{display:flex;flex-direction:column;gap:2px;min-width:0}
+.cbody b{font-weight:700}
+.cbody small{color:var(--muted);font-size:.88rem}
+.cbody .auto{font-style:normal;font-size:.75rem;color:var(--muted);letter-spacing:.04em;margin-top:2px}
+
+.result{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.result .timeout{font-size:.85rem;font-weight:700;color:var(--down)}
+.rtext{line-height:1.85}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  display:inline-flex;align-items:baseline;gap:8px;padding:3px 12px;border-radius:999px;border:1px solid;
+  font-variant-numeric:tabular-nums;font-size:.95rem;
+}
+.chip.up{color:var(--up);border-color:var(--up);background:color-mix(in srgb,var(--up) 12%,transparent)}
+.chip.down{color:var(--down);border-color:var(--down);background:color-mix(in srgb,var(--down) 12%,transparent)}
+.chip.item{color:var(--ink);border-color:var(--sea);background:color-mix(in srgb,var(--sea) 14%,transparent)}
+.chip.none{color:var(--muted);border-color:var(--line);background:transparent}
+.fxs{margin-top:6px;gap:6px}
+.fxs .chip{font-size:.82rem;padding:1px 10px;gap:6px}
+.choice.picked .fxs{display:none}
+.chip b{font-weight:900}
+.chip small{font-size:.72rem;opacity:.85}
+.cons{color:var(--muted);font-size:.92rem}
+.result .cta{align-self:flex-start}
+
+/* ---------- ending ---------- */
+.ending{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px 22px;display:flex;flex-direction:column;gap:14px}
+.ending h2{font-family:var(--font-display);font-weight:400;font-size:clamp(1.6rem,7vw,2.3rem);line-height:1.25;text-wrap:balance}
+.ending .etext{font-size:1.05rem;line-height:1.95}
+.ending .newtag{color:var(--sun-ink);background:var(--sun);border-color:var(--sun)}
+.ending.bad .tag:first-child{color:var(--surface);background:var(--down);border-color:var(--down)}
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.summary div{border:1px solid var(--line);border-radius:10px;padding:6px 12px;background:var(--surface-2);font-variant-numeric:tabular-nums}
+.summary dt{font-size:.75rem;color:var(--muted);font-weight:700;letter-spacing:.06em}
+.summary dd{margin:0;font-weight:900;font-size:1.2rem}
+.owned{font-size:.9rem;color:var(--muted)}
+.end-actions{display:flex;flex-wrap:wrap;gap:12px}
+
+@media (max-width:480px){
+  .stat{grid-template-columns:3.8em 1fr 5.2em;gap:8px}
+  .event{padding:16px}
+  .event h2{font-size:1.3rem}
+}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important;transition:none !important}
+}
+</style>
+
+<main class="app">
+
+  <!-- ===== TITLE ===== -->
+  <section id="scr-title" class="app" style="gap:16px">
+    <div class="hero">
+      <svg viewBox="0 0 360 130" role="img" aria-label="ヤシの木が一本ある小さな無人島のイラスト">
+        <circle class="sun" cx="292" cy="34" r="16"/>
+        <rect class="sea" y="88" width="360" height="42"/>
+        <path class="wave" d="M0 100 q15 -8 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0"/>
+        <path class="wave" d="M-15 116 q15 -8 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0"/>
+        <ellipse class="sand" cx="180" cy="90" rx="88" ry="15"/>
+        <path class="trunk" d="M178 88 C176 62 184 46 196 30" stroke-width="6" stroke-linecap="round"/>
+        <path class="leaf" d="M196 30 q-30 -22 -64 -6 q36 -4 64 6z"/>
+        <path class="leaf" d="M196 30 q-34 4 -50 32 q28 -22 50 -32z"/>
+        <path class="leaf" d="M196 30 q28 -24 62 -10 q-34 -2 -62 10z"/>
+        <path class="leaf" d="M196 30 q32 2 48 30 q-24 -20 -48 -30z"/>
+      </svg>
+      <div class="hero-copy">
+        <span class="tag">漂流30日間サバイバル</span>
+        <h1>ジミィの開拓島</h1>
+        <p>ジミィ君と仲間たちは、無人島に流れ着いた。</p>
+      </div>
+    </div>
+
+    <div class="rules">
+      <h2>あそびかた</h2>
+      <ul>
+        <li>毎日ランダムなイベントが1つ起こる。</li>
+        <li>選択肢から1つ選ぶ。制限時間は30秒で、時間切れなら一番上が選ばれる。</li>
+        <li>住民・食料・財産・満足度・治安のどれかが0になるとゲームオーバー。</li>
+        <li>30日目まで島を守れば、エンディングを迎える。</li>
+      </ul>
+    </div>
+
+    <div class="start-row">
+      <button id="startBtn" class="cta" type="button">島での生活をはじめる</button>
+    </div>
+
+    <div class="collection">
+      <h2>到達したエンディング<small id="seenCount"></small></h2>
+      <ul class="endgrid" id="endGrid"></ul>
+    </div>
+  </section>
+
+  <!-- ===== GAME ===== -->
+  <section id="scr-game" class="app" style="gap:14px" hidden>
+    <header class="topbar">
+      <div class="day"><span class="day-label">DAY</span><b id="dayNum">1</b><span>/ 30</span></div>
+      <div class="timer" id="timer" aria-label="残り時間">
+        <div class="timer-bar"><i id="timerFill"></i></div>
+        <span id="timerNum">30</span>
+      </div>
+    </header>
+    <div class="ticks" id="ticks" aria-hidden="true"></div>
+    <div class="stats" id="stats"></div>
+    <div class="items" id="items"></div>
+
+    <article class="event">
+      <span class="tag" id="evTag">今日のできごと</span>
+      <h2 id="evTitle"></h2>
+      <div id="evText"></div>
+    </article>
+
+    <div class="choices" id="choices"></div>
+    <div class="result" id="result" hidden></div>
+  </section>
+
+  <!-- ===== ENDING ===== -->
+  <section id="scr-end" class="app" hidden>
+    <article class="ending" id="endCard">
+      <div class="tags"><span class="tag" id="endKind"></span><span class="tag newtag" id="endNew" hidden>初到達</span></div>
+      <h2 id="endName"></h2>
+      <p class="etext" id="endText"></p>
+      <dl class="summary" id="endSummary"></dl>
+      <p class="owned" id="endItems"></p>
+      <div class="end-actions">
+        <button class="cta" id="retryBtn" type="button">もう一度あそぶ</button>
+        <button class="ghost" id="toTitleBtn" type="button">タイトルへ</button>
+      </div>
+    </article>
+  </section>
+
+</main>
+
+<script>
+/* =====================================================================
+   ENGINE (no DOM access below this line until the UI marker)
+   ===================================================================== */
+const KEYS = ['res', 'food', 'wealth', 'sat', 'sec'];
+const LABEL = { res: '住民', food: '食料', wealth: '財産', sat: '満足度', sec: '治安' };
+const TIME_LIMIT = 30;
+const LAST_DAY = 30;
+
+const ITEMS = {
+  coffee:    { name: '雪印コーヒーサーバー',     stat: 'food',   text: '食料の最大値 +10' },
+  trophy:    { name: 'トロフィー',               stat: 'wealth', text: '財産の最大値 +10' },
+  guragura:  { name: 'あたしンちグラグラゲーム', stat: 'sat',    text: '満足度の最大値 +10' },
+  statue:    { name: 'ジミィ像',                 stat: 'sec',    text: '治安の最大値 +10' }
+};
+
+/* Choice fields: label, desc, result[], fx{res,food,wealth,sat,sec}, item, disable, invest, cashout, when(S), end */
+const EVENTS = [
+  { id: 'hunt', title: '狩猟',
+    text: ['狩りの日がやってきた。ご飯になるのは猛獣か我々か────'],
+    choices: [
+      { label: '猛獣と戦う', result: ['我々は果敢に戦った。結果、大量の肉を得られた。'], fx: { res: -2, food: 8 } },
+      { label: '罠を仕掛ける', result: ['先人の知恵のおかげで安全に獲物を捕らえることが出来た。'], fx: { food: 2 } },
+      { label: 'まだその時ではない', result: ['決してビビっている訳ではない。本当だ。これは合理的な判断だ。'], fx: { food: -2, sec: 2 } }
+    ] },
+
+  { id: 'immigrants', title: 'ton9島からの移民',
+    text: ['隣の島の指導者とんぐぅがやってきた。話によれば、この島に移民を送りたいとのことだ。'],
+    choices: [
+      { label: '移民を受け入れる', result: ['あなたは満面の笑みで移民を受け入れた。'], fx: { res: 4, wealth: -2 } },
+      { label: '施しは受けない', result: ['あなたは断った。自分の道は自分で切り開いていくものだ。'], fx: { sec: 2 } }
+    ] },
+
+  { id: 'hammurabi', title: 'ハンムラビ襲来',
+    text: ['ハンムラビの軍勢が海を渡って島に上陸した。彼らは『金品を差し出さなければ我らの法に従い、この島を更地にする』と威嚇している！'],
+    choices: [
+      { label: '彼らに従い、金を渡す', desc: '命を失うくらいなら金を失った方がマシだ。',
+        result: ['彼らは満足そうに金品を受け取ると、戦車で海を渡っていった。'], fx: { wealth: -4, sec: 8 } },
+      { label: '徹底抗戦する', desc: '多少血は流れるが、それも必要な犠牲だろう。',
+        result: ['あなたは死闘の末居住地を守り切った。'], fx: { res: -4, sec: -8 }, disable: true },
+      { label: '同等の対価として食料を渡す',
+        result: ['彼らは満足そうに雪印コーヒーを受け取ると、戦車で海を渡っていった。'], fx: { food: -4, sec: 8 } }
+    ] },
+
+  { id: 'ruins', title: '謎の古代遺跡の発見',
+    text: ['島の奥地で鬱蒼としたツタに覆われた古代遺跡を発見した。奥から怪しい光と機械のうなり声が聞こえる……'],
+    choices: [
+      { label: 'リスクを承知で深く探索する',
+        result: ['深部まで潜ると、たちまちロボット達に囲まれた。『ギギギ…』あなたはロボット達を住民に加えた。しかし、機械の駆動音がうるさいという苦情が出るようになった。'],
+        fx: { res: 4, sat: -4 } },
+      { label: '入口付近の資材だけ回収して撤退する',
+        result: ['あなたは入口付近だけ探索するように指示した。探索隊は資材を回収し、無事に戻ってきた。'], fx: { wealth: 4, sat: -2 } },
+      { label: '安全第一で埋め戻して封印する',
+        result: ['あなたは住民の声を優先し、遺跡を埋め立てた。'], fx: { wealth: -4, sec: 4 } }
+    ] },
+
+  { id: 'mercenary', title: '傭兵',
+    text: ['あなたのもとに武装した集団がやってくる。話によれば、傭兵を雇って島に住まわせれば治安を守ってくれるそうだ。'],
+    choices: [
+      { label: '承諾する', result: ['傭兵達は島に住むようになった。多少住民を脅かしたりしているようだが、仕方ないだろう。'], fx: { wealth: -4, sat: -4, sec: 4 } },
+      { label: '断る', result: ['武装した集団は島で略奪を行うようになった。あなたは『何が治安を守るだ』と思いながら奴らを追い出した。'], fx: { sec: -4 } }
+    ] },
+
+  { id: 'whale', title: '白鯨',
+    text: ['あなたのもとにイシュメールがやってくる。『この島の近くに奴が……いや、白鯨が近付いています。戦士を貸してくれるなら、報酬を山分けしてあげますよ。はぁ…まあ別に手伝ってもらわなくてもいいんですけど。』'],
+    choices: [
+      { label: '戦士を向かわせる',
+        result: ['『漕ぎ手！！！！！応えろ！！！！オールを掴んだ者ども！！！！』', '見事白鯨を討った。イシュメールは黄金の枝を手に入れ、白鯨は島の食料として寄贈された。'],
+        fx: { res: -4, food: 10 } },
+      { label: '断る', result: ['白鯨はその後討伐されたが、その死闘の間に白鯨が島の海産資源を根こそぎ奪っていった。'], fx: { food: -6 } }
+    ] },
+
+  { id: 'trial', title: '裁判',
+    text: ['あなたの島の罪人の処遇を問われた。この盗っ人に下す審判は────'],
+    choices: [
+      { label: '放っておく', result: ['一時の気の迷いでこんな事をしてしまう場合もあるだろう。'], fx: { wealth: 4, sec: -4 } },
+      { label: '裁判を行う', result: ['『異議あり！』', '『くらえ！』', '法の下に有罪判決を勝ち取った。'], fx: { wealth: -4, sec: 4 } },
+      { label: '魔女裁判を行う', result: ['『それはおかしいよ！ﾊﾞﾘｰﾝ』', '住民は疑心暗鬼に包まれた。'], fx: { res: -1, sat: -4, sec: 4 } }
+    ] },
+
+  { id: 'games', title: '大陸で人気のゲーム',
+    text: ['商人がやってきた。『この島には娯楽が必要！何か買っていきやすかい？』'],
+    choices: [
+      { label: 'マインクラフト', result: ['あなたは開拓島に飽き足らず、ゲーム内でも島を発展させた。'], fx: { wealth: -2, sat: 2 } },
+      { label: 'League of Legends', result: ['住民達は今日もランクマでLPを溶かしている。'], fx: { wealth: -2, sat: 4, sec: -2 } },
+      { label: 'あたしンちグラグラゲーム', result: ['住民達はこの玩具に熱狂した。あなたは未だにその価値を分かっていない。'],
+        fx: { wealth: -10, sat: 10 }, item: 'guragura', disable: true },
+      { label: '買わない', result: ['何も起こらない。'] }
+    ] },
+
+  { id: 'sales', title: '本社から',
+    text: ['雪印メグミルクから営業がやってきた。『今ならコーヒーサーバーがたったの財産6！お買い得ですよ！』'],
+    choices: [
+      { label: '買う', result: ['あなたはコーヒーサーバーを買う。雪印コーヒーが飲み放題だ。『お買い上げあざっした～』'],
+        fx: { wealth: -6, food: 6 }, item: 'coffee', disable: true },
+      { label: '買わない', result: ['あなたは財布を開いてがっかりした。試供品の雪印をいくつかくれた後、営業は去っていった。'], fx: { food: 2 } }
+    ] },
+
+  { id: 'oil', title: '油田',
+    text: ['住民が大騒ぎしている。『ジミィ君！見てくれ！石油が出たぞ！』', 'あなたはこの石油で得た利益を────'],
+    choices: [
+      { label: '独占する', result: ['あなたはリッチになった。一方、住民の不満が高まった。'], fx: { wealth: 10, sat: -4 } },
+      { label: '住民に分け与える', result: ['住民はより豊かになった。一方、働かない者が出てきた。'], fx: { sat: 10, sec: -4 } }
+    ] },
+
+  { id: 'pirates', title: '海賊',
+    text: ['海賊たちがやってきた。『ヨーホーヨーホー♪俺たちゃ海賊♪ならず者♪』', 'どうやら即座にこちらに危害を加える気は無いらしい。'],
+    choices: [
+      { label: '食料を売って交易する', result: ['海賊たちはシーフードの盛り合わせに舌鼓を打った。'], fx: { food: -4, wealth: 6 } },
+      { label: '移住させる', result: ['意外にもこの島の生活に順応したようだ。しかし、粗野な振る舞いは相変わらずだ。'], fx: { res: 6, sec: -4 } },
+      { label: '殺してでも奪い取る', result: ['我々は略奪の限りを尽くした。一体、海賊はどちらの方なのか。'],
+        fx: { res: -4, food: 6, wealth: 6, sat: -4, sec: -4 }, disable: true }
+    ] },
+
+  { id: 'specialty', title: '名産品',
+    text: ['島の名産品を決めましょう！', 'この島の名産品は────'],
+    choices: [
+      { label: '真珠', result: ['高品質な真珠は瞬く間に売れた。'], fx: { wealth: 4 } },
+      { label: 'おすし', result: ['すしてっかー'], fx: { food: 4 } },
+      { label: '革製品', result: ['我々は動物の皮をなめし、革にしていった。'], fx: { sat: 4 } }
+    ] },
+
+  { id: 'coal', title: '石炭採掘所',
+    text: ['島の環境保護団体が石炭採掘所の閉鎖を求めている。'],
+    choices: [
+      { label: '閉鎖する', result: ['地球の環境のためなら仕方ないだろう。'], fx: { wealth: -4, sat: 4 }, disable: true },
+      { label: '無視する', result: ['この手の者は少しでも反応すると付け上がってくる。'], fx: { wealth: 4, sat: -4 } },
+      { label: '団体を解散させる', result: ['この島にこんな団体なぞ不要だ。'], fx: { wealth: 4, sat: -8 }, disable: true }
+    ] },
+
+  { id: 'statue', title: '銅像',
+    cond: S => !S.items.includes('statue'),
+    text: ['この島にあなた様の銅像を建てましょう！'],
+    choices: [
+      { label: 'ぜひとも建てよう', result: ['銅像はみるみるうちに完成した。'], fx: { wealth: -8, sec: 10 }, item: 'statue' },
+      { label: '金の無駄だ', result: ['そんなものに金を払っている暇は無い。'], fx: { wealth: 4 } }
+    ] },
+
+  { id: 'gacha', title: 'ガチャ',
+    text: ['『一攫千金！夢のガチャ回していきませんかぁ！？』胡散臭い法被を着た男が、島にガチャマシンを持ち込んできた。当たるか分からないが、ワンチャン狙う価値はあるかもしれない……。'],
+    choices: [
+      { label: '奮発して10連を回す', result: ['あなたはすっかりガチャの虜になってしまった。あなたの目的はガチャを引くことになっている。'], fx: { wealth: -8, sat: 8 } },
+      { label: '1回だけ慎重に回す', result: ['『おっ、当たりですねぇ～』'], fx: { wealth: 2 } },
+      { label: '追い返す', result: ['こんなギャンブルに惑わされてはならない。', '何も起こらない。'] }
+    ] },
+
+  { id: 'cult', title: '怪しい教団',
+    text: ['従者が報告する。『最近、島の間でカルト的な宗教が流行っています。弾圧しますか？』'],
+    choices: [
+      { label: '黙認する', result: ['黙っていればその団体から賄賂を貰えると知り、そのままにしておいた。'], fx: { wealth: 4, sat: -4 } },
+      { label: '弾圧する', result: ['このような暴挙は黙って見ていられない。島から追い出そう。'], fx: { res: -2, sat: 4 } },
+      { label: '新しい宗教を作る', result: ['新しく宗教を作り、国教として定めた。これで悪さはしなくなるだろう。'], fx: { wealth: -4, sat: 4, sec: 4 }, disable: true }
+    ] },
+
+  { id: 'heli', title: 'ヘリコプター',
+    text: ['島にヘリコプターが上陸した。『おい、あんた、この島から脱出しないか？ただし連れていけるのはあんた一人だ。』', '他の住民を置いていくことになるが、どうする？'],
+    choices: [
+      { label: '家に帰る', result: ['『さあ乗りな。家が恋しいだろう。』'], end: 'escape' },
+      { label: '補給物資を売りつけて帰ってもらう', result: ['パイロットは補給物資を受け取ると、島を去っていった。'], fx: { food: -4, wealth: 6 } },
+      { label: 'ヘリコプターを奪う', result: ['パイロットを殺害し、ヘリを分解して金に換えた。'], fx: { wealth: 10, sec: -8 } }
+    ] },
+
+  { id: 'invest', title: '儲け話にはご用心',
+    text: ['投資家が来た。『このファンドに投資してくれれば、利益が2倍になって返ってきますよ！』', 'あなたはどうする？'],
+    choices: [
+      { label: '追い返す', result: ['そういう話には乗らないことにしている。'], fx: { wealth: 2 } },
+      { label: '話に乗る', result: ['金を差し出した。これは詐欺かもしれないし、詐欺じゃないかもしれない。'], fx: { wealth: -4 }, invest: true },
+      { label: '利益が返ってくる', result: ['話は本当だったようだ。'], fx: { wealth: 8 }, cashout: true, when: S => S.invested }
+    ] },
+
+  { id: 'spiki', title: 'ｽﾋﾟｷ', rare: true,
+    text: ['『ﾁｮﾜﾖｰﾁｮﾜﾖｰﾑﾙｺﾞﾙﾚｼﾞﾙﾁｮﾜﾖー！』ｽﾋﾟｷがやってきた。どうやら交易がしたいようだ。'],
+    choices: [
+      { label: '撫でる', result: ['『ﾁｮﾜﾖ！』ｽﾋﾟｷはかわいいね。'], fx: { sat: 4 } },
+      { label: 'ﾎﾊﾞｷﾞを買う', result: ['『ﾁｮﾜﾖ！』ｽﾋﾟｷはかわいいね。'], fx: { wealth: -2, food: 4 } },
+      { label: 'ﾎﾊﾞｷﾞを奪う', result: ['『ｳﾜｱｱｱｱ!ｽﾋﾟｷﾃﾞﾙｼﾞﾊﾞｾﾞﾖ!!』ﾎﾊﾞｷﾞを置いて逃げていった。'], fx: { food: 6, sat: -2, sec: -4 } }
+    ] },
+
+  { id: 'creator', title: '製作者からの贈り物', rare: true, once: true,
+    cond: S => !S.items.includes('trophy'),
+    text: ['砂浜に怪しげなランプが埋まっている。あなたはそれを掘り起こして汚れを掃除すると、中からランプの魔人ではなくdevlargeが出現した。', '『このゲームをプレイしてくれてありがとう！』'],
+    choices: [
+      { label: '富、名声、財宝', result: ['空から金銀財宝が落ちてきた。ラッキー！'], fx: { wealth: 10 }, item: 'trophy' }
+    ] }
+];
+
+/* 30日目に条件を満たすと強制発生。上から順に判定する。 */
+const FORCED = [
+  { id: 'megalopolis', title: 'メガロポリス', forced: true,
+    cond: S => S.res >= 100,
+    text: ['あなたが宮殿のラウンジから外を見渡すと、溢れん限りの市民で埋めつくされている。'],
+    choices: [
+      { label: '文明を創設する', result: ['あなたは文明を創設した。'], end: 'civ' }
+    ] },
+  { id: 'independence', title: 'ジミィ国独立宣言', forced: true,
+    cond: S => S.res >= 50 && S.sat >= 50 && S.sec >= 50,
+    text: ['住民の一人が提案してきた。『そろそろ我々の国を築き、世界へ栄光を示そう！』', 'あなたは──'],
+    choices: [
+      { label: '共和国を創設する', result: ['あなたは国家を創設した。'], end: 'kingdom' },
+      { label: '申し出を断る', result: ['あなたは申し出を断った。'], end: 'island' }
+    ] },
+  { id: 'independence2', title: 'ジミィ国独立宣言？', forced: true,
+    cond: S => S.res >= 50 && S.sat <= 20 && S.sec <= 20,
+    text: ['住民の一人が提案してきた。『そろそろ我々の国を築き、世界へ栄光を示そう！』'],
+    choices: [
+      { label: '独裁国家を創設する', result: ['あなたは国家を創設した。'], end: 'dictator' },
+      { label: '申し出を断る', result: ['あなたは申し出を断った。'], end: 'island' }
+    ] }
+];
+
+const ENDINGS = {
+  res:      { name: '住民0エンド',     bad: true, text: 'ついにあなたの命も尽きてしまった。この島は正真正銘の無人島になってしまった。' },
+  food:     { name: '食料0エンド',     bad: true, text: '食料が底をついてしまった。住民たちは暴動を起こし、この島は歴史から消えてしまった。' },
+  wealth:   { name: '財産0エンド',     bad: true, text: '財政が赤字になってしまった。あなたは指導者としての資質を疑われ、島から追放されてしまった。' },
+  sat:      { name: '満足度0エンド',   bad: true, text: '住民の不満がピークに達してしまった。あなたは明日ギロチン刑に処される予定だ。' },
+  sec:      { name: '治安0エンド',     bad: true, text: '治安がついに限界を超えてしまった。毎夜暴走族が島中を走り回り、銃声が聞こえない日は無い────' },
+  escape:   { name: '無人島脱出エンド', text: 'あなたは無人島から脱出した。他の住民は無事だろうか────' },
+  kingdom:  { name: '王国建設エンド',   text: 'あなたはジミィ国を創設した。この功績は永久に称えられ、あなたの名は後世で語り継がれるだろう。' },
+  dictator: { name: '独裁国家エンド',   text: 'あなたはジミィ国を創設した。あなたの意に反するものは処刑され、言論弾圧により住民の反発する声は次第に小さくなっていくだろう。' },
+  civ:      { name: '文明エンド',       text: '我々の勢力はもはや国というより文明と呼ぶべき規模になった。この波はいずれ他の国家をも飲み込むだろう。' },
+  island:   { name: '無人島エンド',     text: '我々はこの先も平和に無人島で生活していった────' }
+};
+const ENDING_ORDER = ['island', 'escape', 'kingdom', 'dictator', 'civ', 'res', 'food', 'wealth', 'sat', 'sec'];
+
+function newState() {
+  return {
+    day: 1, res: 10, food: 25, wealth: 25, sat: 25, sec: 25,
+    max: { food: 50, wealth: 50, sat: 50, sec: 50 },
+    items: [], disabled: new Set(), invested: false,
+    last: null, ev: null, vis: [], phase: 'choose', result: null
+  };
+}
+
+function consumption(S) { return 1 + Math.floor(S.res / 20); }
+
+function zeroStat(S) {
+  for (const k of KEYS) if (S[k] <= 0) return k;
+  return null;
+}
+
+function pickEvent(S) {
+  if (S.day === LAST_DAY) {
+    for (const f of FORCED) if (f.cond(S)) return f;
+  }
+  const pool = EVENTS.filter(e => e.id !== S.last && !S.disabled.has(e.id) && (!e.cond || e.cond(S)));
+  const weights = pool.map(e => (e.rare ? 0.4 : 1));
+  let r = Math.random() * weights.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < pool.length; i++) {
+    r -= weights[i];
+    if (r < 0) return pool[i];
+  }
+  return pool[pool.length - 1];
+}
+
+function visibleChoices(S, ev) {
+  return ev.choices.filter(c => !c.when || c.when(S));
+}
+
+/* Applies the chosen option, then the daily food cost, and reports what happened. */
+function resolve(S, index, timedOut) {
+  const c = S.vis[index];
+  const before = {};
+  KEYS.forEach(k => { before[k] = S[k]; });
+  const out = { choice: c, deltas: [], item: null, cons: 0, end: null, timedOut: !!timedOut };
+
+  if (c.item) {
+    const it = ITEMS[c.item];
+    S.items.push(c.item);
+    S.max[it.stat] += 10;
+    out.item = it;
+  }
+  if (c.invest) S.invested = true;
+  if (c.cashout) S.invested = false;
+  if (c.disable || S.ev.once) S.disabled.add(S.ev.id);
+
+  const fx = c.fx || {};
+  KEYS.forEach(k => {
+    if (fx[k]) S[k] += fx[k];
+    if (k !== 'res') S[k] = Math.min(S[k], S.max[k]);
+    S[k] = Math.max(0, S[k]);
+    if (fx[k]) out.deltas.push({ k, intended: fx[k], actual: S[k] - before[k] });
+  });
+
+  if (c.end) {
+    out.end = c.end;
+  } else if (S.ev.forced) {
+    out.end = 'island';
+  } else {
+    let z = zeroStat(S);
+    if (!z) {
+      out.cons = consumption(S);
+      S.food = Math.max(0, S.food - out.cons);
+      z = zeroStat(S);
+    }
+    if (z) out.end = z;
+    else if (S.day >= LAST_DAY) out.end = 'island';
+  }
+  S.phase = 'result';
+  S.result = out;
+  return out;
+}
+
+/*--UI--*/
+/* =====================================================================
+   UI
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const LS_KEY = 'jimmy-island-endings';
+let S = null;
+let timerId = null;
+let deadline = 0;
+let totalMs = 0;
+
+function loadSeen() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch (e) { return []; }
+}
+function saveSeen(list) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(list)); } catch (e) { /* storage unavailable */ }
+}
+
+function show(id) {
+  ['scr-title', 'scr-game', 'scr-end'].forEach(s => { $(s).hidden = s !== id; });
+  window.scrollTo(0, 0);
+}
+
+/* ---------- title ---------- */
+function renderTitle() {
+  const seen = loadSeen();
+  $('seenCount').textContent = seen.length + ' / ' + ENDING_ORDER.length;
+  $('endGrid').innerHTML = ENDING_ORDER.map(id =>
+    seen.includes(id)
+      ? '<li>' + ENDINGS[id].name + '</li>'
+      : '<li class="locked">？？？？？？</li>'
+  ).join('');
+}
+
+/* ---------- game ---------- */
+function buildStats() {
+  $('stats').innerHTML = KEYS.map(k =>
+    '<div class="stat" id="st-' + k + '" style="--c:var(--c-' + k + ')">' +
+      '<span class="st-name">' + LABEL[k] + '</span>' +
+      '<span class="st-bar"><i></i></span>' +
+      '<span class="st-val"><b></b><small></small></span>' +
+    '</div>'
+  ).join('');
+}
+
+function updateStats(flash) {
+  KEYS.forEach(k => {
+    const el = $('st-' + k);
+    const v = S[k];
+    const max = k === 'res' ? null : S.max[k];
+    const pct = k === 'res' ? Math.min(v, 100) : (v / max) * 100;
+    el.querySelector('i').style.width = pct + '%';
+    el.querySelector('b').textContent = v;
+    el.querySelector('small').textContent = max ? '/ ' + max : '';
+    el.classList.toggle('danger', k === 'res' ? v <= 3 : v <= 8);
+    el.classList.remove('up', 'down');
+    if (flash && flash[k]) {
+      void el.offsetWidth;
+      el.classList.add(flash[k] > 0 ? 'up' : 'down');
+    }
+  });
+}
+
+function renderItems() {
+  const owned = S.items.map(id =>
+    '<li><b>' + ITEMS[id].name + '</b><small>' + ITEMS[id].text + '</small></li>'
+  ).join('');
+  $('items').innerHTML =
+    '<div><span class="meta-k">所持品</span><ul>' + (owned || '<li class="none">なし</li>') + '</ul></div>' +
+    '<div class="cons-now"><span class="meta-k">毎日の食料消費</span><b>−' + consumption(S) + '</b></div>';
+}
+
+/* 選ぶ前に、その選択肢で増減する数値を見せる */
+function fxPreview(c) {
+  const fx = c.fx || {};
+  const chips = KEYS.filter(k => fx[k]).map(k =>
+    '<li class="chip ' + (fx[k] > 0 ? 'up' : 'down') + '"><span>' + LABEL[k] + '</span><b>' +
+    (fx[k] > 0 ? '+' : '−') + Math.abs(fx[k]) + '</b></li>'
+  );
+  if (c.item) {
+    const it = ITEMS[c.item];
+    chips.push('<li class="chip item"><span>' + it.name + '</span><b>' + it.text + '</b></li>');
+  }
+  if (c.end === 'escape') {
+    chips.push('<li class="chip item"><span>島を脱出してゲーム終了</span></li>');
+  }
+  if (!chips.length) chips.push('<li class="chip none"><span>変化なし</span></li>');
+  return '<ul class="chips fxs">' + chips.join('') + '</ul>';
+}
+
+function renderDay() {
+  $('dayNum').textContent = S.day;
+  const ticks = $('ticks');
+  ticks.innerHTML = '';
+  for (let d = 1; d <= LAST_DAY; d++) {
+    const i = document.createElement('i');
+    if (d < S.day) i.className = 'done';
+    else if (d === S.day) i.className = 'now';
+    ticks.appendChild(i);
+  }
+  renderItems();
+  updateStats();
+
+  const ev = S.ev;
+  const tag = $('evTag');
+  tag.textContent = ev.forced ? '30日目 特別イベント' : ev.rare ? 'レアイベント' : '今日のできごと';
+  tag.className = 'tag' + (ev.forced ? ' forced' : ev.rare ? ' rare' : '');
+  $('evTitle').textContent = ev.title;
+  $('evText').innerHTML = ev.text.map(p => '<p>' + p + '</p>').join('');
+
+  const box = $('choices');
+  box.innerHTML = '';
+  S.vis.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'choice';
+    b.innerHTML =
+      '<span class="key">' + (i + 1) + '</span>' +
+      '<span class="cbody"><b>' + c.label + '</b>' +
+        (c.desc ? '<small>' + c.desc + '</small>' : '') +
+        fxPreview(c) +
+        (i === 0 ? '<em class="auto">時間切れのときはこれが選ばれる</em>' : '') +
+      '</span>';
+    b.addEventListener('click', () => pick(i, false));
+    box.appendChild(b);
+  });
+  $('result').hidden = true;
+}
+
+function startDay() {
+  S.phase = 'choose';
+  S.ev = pickEvent(S);
+  S.last = S.ev.id;
+  S.vis = visibleChoices(S, S.ev);
+  renderDay();
+  startTimer();
+}
+
+/* ---------- timer ---------- */
+function startTimer() {
+  stopTimer();
+  totalMs = (S.ev.time || TIME_LIMIT) * 1000;
+  deadline = Date.now() + totalMs;
+  $('timer').classList.remove('off');
+  tick();
+  timerId = setInterval(tick, 100);
+}
+function stopTimer() {
+  if (timerId) { clearInterval(timerId); timerId = null; }
+}
+function tick() {
+  const left = Math.max(0, deadline - Date.now());
+  $('timerFill').style.transform = 'scaleX(' + (left / totalMs) + ')';
+  $('timerNum').textContent = Math.ceil(left / 1000);
+  $('timer').classList.toggle('low', left <= 8000);
+  if (left <= 0) {
+    stopTimer();
+    pick(0, true);
+  }
+}
+
+/* ---------- choosing ---------- */
+function pick(i, timedOut) {
+  if (!S || S.phase !== 'choose' || !S.vis[i]) return;
+  stopTimer();
+  const before = {};
+  KEYS.forEach(k => { before[k] = S[k]; });
+  const out = resolve(S, i, timedOut);
+  const flash = {};
+  KEYS.forEach(k => { flash[k] = S[k] - before[k]; });
+
+  $('timer').classList.add('off');
+  $('timerNum').textContent = '—';
+  $('timer').classList.remove('low');
+
+  Array.from($('choices').children).forEach((b, j) => {
+    if (j === i) { b.disabled = true; b.classList.add('picked'); }
+    else b.hidden = true;
+  });
+  renderItems();
+  updateStats(flash);
+  renderResult(out);
+}
+
+function renderResult(out) {
+  const chips = out.deltas.map(d => {
+    const cls = d.intended > 0 ? 'up' : 'down';
+    const sign = d.actual > 0 ? '+' : d.actual < 0 ? '−' : '±';
+    const capped = d.intended > 0 && d.actual < d.intended;
+    return '<li class="chip ' + cls + '"><span>' + LABEL[d.k] + '</span><b>' + sign + Math.abs(d.actual) + '</b>' +
+      (capped ? '<small>上限</small>' : '') + '</li>';
+  });
+  if (out.item) {
+    chips.push('<li class="chip item"><span>' + out.item.name + 'を入手</span><b>' +
+      LABEL[out.item.stat] + 'の最大値 +10</b></li>');
+  }
+  const html =
+    (out.timedOut ? '<p class="timeout">時間切れ。一番上の選択肢が選ばれた。</p>' : '') +
+    out.choice.result.map(p => '<p class="rtext">' + p + '</p>').join('') +
+    (chips.length ? '<ul class="chips">' + chips.join('') + '</ul>' : '') +
+    (out.cons ? '<p class="cons">一日の終わりに、食料を ' + out.cons + ' 消費した。</p>' : '') +
+    '<button type="button" class="cta" id="nextBtn">' + (out.end ? '結末を見る' : '次の日へ') + '</button>';
+  const box = $('result');
+  box.innerHTML = html;
+  box.hidden = false;
+  $('nextBtn').addEventListener('click', next);
+  $('nextBtn').focus({ preventScroll: true });
+  box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function next() {
+  if (!S || S.phase !== 'result') return;
+  if (S.result.end) { showEnding(S.result.end); return; }
+  S.day += 1;
+  startDay();
+}
+
+/* ---------- ending ---------- */
+function showEnding(id) {
+  stopTimer();
+  const E = ENDINGS[id];
+  const seen = loadSeen();
+  const isNew = !seen.includes(id);
+  if (isNew) { seen.push(id); saveSeen(seen); }
+
+  $('endCard').className = 'ending' + (E.bad ? ' bad' : '');
+  $('endKind').textContent = E.bad ? 'ゲームオーバー' : 'エンディング';
+  $('endNew').hidden = !isNew;
+  $('endName').textContent = E.name;
+  $('endText').textContent = E.text;
+  $('endSummary').innerHTML =
+    '<div><dt>到達日</dt><dd>' + S.day + '日目</dd></div>' +
+    KEYS.map(k => '<div><dt>' + LABEL[k] + '</dt><dd>' + S[k] + '</dd></div>').join('');
+  $('endItems').textContent = S.items.length
+    ? '所持品: ' + S.items.map(i => ITEMS[i].name).join('、')
+    : '所持品: なし';
+  show('scr-end');
+  $('retryBtn').focus({ preventScroll: true });
+}
+
+/* ---------- wiring ---------- */
+function startGame() {
+  S = newState();
+  buildStats();
+  show('scr-game');
+  startDay();
+}
+
+$('startBtn').addEventListener('click', startGame);
+$('retryBtn').addEventListener('click', startGame);
+$('toTitleBtn').addEventListener('click', () => { stopTimer(); renderTitle(); show('scr-title'); });
+
+document.addEventListener('keydown', e => {
+  if (!S || $('scr-game').hidden) return;
+  if (S.phase === 'choose' && /^[1-9]$/.test(e.key)) {
+    pick(Number(e.key) - 1, false);
+  } else if (S.phase === 'result' && (e.key === 'Enter' || e.key === ' ') && e.target === document.body) {
+    e.preventDefault();
+    next();
+  }
+});
+
+renderTitle();
+show('scr-title');
+</script>
+
+</body></html>
