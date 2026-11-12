@@ -454,7 +454,7 @@ const EVENTS = [
   { id: 'gacha', title: 'ガチャ',
     text: ['『一攫千金！夢のガチャ回していきませんかぁ！？』胡散臭い法被を着た男が、島にガチャマシンを持ち込んできた。当たるか分からないが、ワンチャン狙う価値はあるかもしれない……。'],
     choices: [
-      { label: '奮発して10連を回す', result: ['あなたはすっかりガチャの虜になってしまった。あなたの目的はガチャを引くことになっている。'], fx: { wealth: -8, sat: 8 } },
+      { label: '奮発して10連を回す', result: ['あなたはすっかりガチャの虜になってしまった。あなたの目的はガチャを引くことにすり替わっている。'], fx: { wealth: -8, sat: 8 } },
       { label: '1回だけ慎重に回す', result: ['『おっ、当たりですねぇ～』'], fx: { wealth: 2 } },
       { label: '追い返す', result: ['こんなギャンブルに惑わされてはならない。', '何も起こらない。'] }
     ] },
@@ -527,6 +527,14 @@ const EVENTS = [
       { label: 'モアイを彫る', result: ['石を切り出してモアイを作った。'], fx: { wealth: -4, sat: 4 } }
     ] },
 
+  { id: 'researcher', title: '研究者',
+    text: ['研究者がやってきた。『宇宙開発研究への投資をお願いします！』'],
+    choices: [
+      { label: '少額の援助', result: ['少しばかり援助してやることにした。'], fx: { wealth: -2, sat: 2 } },
+      { label: '多額の援助', result: ['折角なので多額の援助をすることにした。'], fx: { wealth: -10, sat: 6 }, bigAid: true },
+      { label: '援助はしない', result: ['そんなものに金を使っている暇は無い。'], fx: { wealth: 2 } }
+    ] },
+
   { id: 'meteor', title: '隕石', rare: true,
     text: ['島に隕石が降ってきた。'],
     choices: [
@@ -553,6 +561,12 @@ const EVENTS = [
 
 /* 30日目に条件を満たすと強制発生。上から順に判定する。 */
 const FORCED = [
+  { id: 'spaceflight', title: '飛翔の夢', forced: true,
+    cond: S => S.bigAid >= 3 && S.res >= 30,
+    text: ['今日は宇宙船の打ち上げ日だ。ミッションの成功を祈る。'],
+    choices: [
+      { label: '宇宙船を打ち上げる', result: ['あなたは宇宙へ飛び立った。'], end: 'space' }
+    ] },
   { id: 'megalopolis', title: 'メガロポリス', forced: true,
     cond: S => S.res >= 50,
     text: ['あなたが宮殿のラウンジから外を見渡すと、溢れん限りの市民で埋めつくされている。'],
@@ -572,6 +586,12 @@ const FORCED = [
     choices: [
       { label: '金満国家を創設する', result: ['あなたは国家を創設した。'], end: 'rich' },
       { label: '申し出を断る', result: ['あなたは申し出を断った。'], end: 'island' }
+    ] },
+  { id: 'anarchy', title: 'アナーキー', forced: true,
+    cond: S => S.res < 30 && S.sat <= 20 && S.sec <= 20,
+    text: ['住民の一人が提案してきた。『そろそろ我々の国を築き、世界へ栄光を示そう！』'],
+    choices: [
+      { label: '国家を創設できない', result: ['あなたの集団には、国を築くだけの結束がなかった。'], end: 'anarchy' }
     ] },
   { id: 'peacenation', title: '平和国家', forced: true,
     cond: S => S.sec >= 50,
@@ -608,6 +628,8 @@ const ENDINGS = {
   rich:     { name: '金満エンド',       text: 'あなたはジミィ国を創設した。あなたの財布は黄金で溢れ、もはやあなたに買えないものは無い。' },
   happy:    { name: '幸福エンド',       text: 'あなたはジミィ国を創設した。市民は幸福で染まり、あなたを教祖として崇めている。' },
   peace:    { name: '平和エンド',       text: 'あなたはジミィ国を創設した。ジミィ国から始まったこの平和の輪は、世界中に広がったという────' },
+  space:    { name: '宇宙エンド',       text: 'あなたは宇宙からジミィの開拓島を見下ろした。地球は青かった────' },
+  anarchy:  { name: '無政府エンド',     text: 'あなたの集団は統率が取れないままここまで来てしまった。結束を強めなければ、いずれ他国に滅ぼされるだろう。' },
   civ:      { name: '文明エンド',       text: '我々の勢力はもはや国というより文明と呼ぶべき規模になった。この波はいずれ他の国家をも飲み込むだろう。' },
   island:   { name: '無人島エンド',     text: '我々はこの先も平和に無人島で生活していった────' }
 };
@@ -619,13 +641,13 @@ const HINTS = [
   'イベント次第で特殊なアイテムが手に入ることがあるぞ',
   '宗教を創始した上で満足度50以上の条件を満たして30日目を終えると…？'
 ];
-const ENDING_ORDER =['island', 'escape', 'kingdom', 'dictator', 'rich', 'happy', 'peace', 'civ', 'res', 'food', 'wealth', 'sat', 'sec'];
+const ENDING_ORDER =['island', 'escape', 'kingdom', 'dictator', 'rich', 'happy', 'peace', 'space', 'anarchy', 'civ', 'res', 'food', 'wealth', 'sat', 'sec'];
 
 function newState() {
   return {
     day: 1, res: 10, food: 25, wealth: 25, sat: 25, sec: 25,
     max: { food: 50, wealth: 50, sat: 50, sec: 50 },
-    items: [], disabled: new Set(), invested: false, religion: false,
+    items: [], disabled: new Set(), invested: false, religion: false, bigAid: 0,
     last: null, ev: null, vis: [], phase: 'choose', result: null
   };
 }
@@ -688,6 +710,7 @@ function resolve(S, index, timedOut) {
   }
   if (c.invest) S.invested = true;
   if (c.religion) S.religion = true;
+  if (c.bigAid) S.bigAid += 1;
   if (c.cashout) S.invested = false;
   if (c.disable || S.ev.once) S.disabled.add(S.ev.id);
 
