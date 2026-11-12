@@ -483,14 +483,6 @@ const EVENTS = [
       { label: '利益が返ってくる', result: ['話は本当だったようだ。'], fx: { wealth: 8 }, cashout: true, when: S => S.invested }
     ] },
 
-  { id: 'trolley', title: 'トロッコ問題',
-    text: ['暴走した列車を止めなければならない。列車はこのままだと線路上の5人を轢いてしまう。', 'しかし、進路を切り替えれば轢かれるのは1人で済む。あなたの選択は────'],
-    choices: [
-      { label: '静観する', result: ['あなたは責任を負わずに済んだ。'], fx: { res: -5 } },
-      { label: '進路を切り替える', result: ['犠牲になる人数は少なく済んだ。しかし切り替えていなかったら死ななくて済んだ一人を殺したのはあなただ。'], fx: { res: -1, sat: -6 } },
-      { label: '列車を脱線させる', result: ['あなたは線路を巧みに切り替えると、列車を脱線させて全員を救うことに成功した。', 'しかし、線路は傷ついてしまった。'], fx: { wealth: -4 } }
-    ] },
-
   { id: 'fishing', title: '漁業',
     text: ['漁業従事者からの提言があった。『そろそろ本格的な漁を始めましょう！』'],
     choices: [
@@ -681,7 +673,11 @@ function pickEvent(S) {
     for (const f of FORCED) if (f.cond(S)) return f;
   }
   const pool = EVENTS.filter(e => e.id !== S.last && !S.disabled.has(e.id) && (!e.cond || e.cond(S)));
-  const weights = pool.map(e => (e.rare ? 0.4 : 1));
+  /* 「多額の援助」を選ぶほど研究者が出やすくなる（3回で飛翔の夢の条件に届くまで） */
+  const weights = pool.map(e => {
+    if (e.id === 'researcher' && S.bigAid > 0 && S.bigAid < 3) return 1 + 2 * S.bigAid;
+    return e.rare ? 0.4 : 1;
+  });
   let r = Math.random() * weights.reduce((a, b) => a + b, 0);
   for (let i = 0; i < pool.length; i++) {
     r -= weights[i];
