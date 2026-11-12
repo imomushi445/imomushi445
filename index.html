@@ -195,7 +195,8 @@ h1{
 .chip.none{color:var(--muted);border-color:var(--line);background:transparent}
 .fxs{margin-top:6px;gap:6px}
 .fxs .chip{font-size:.82rem;padding:1px 10px;gap:6px}
-.choice.picked .fxs{display:none}
+.choice.picked .fxs,.choice.picked .randfx{display:none}
+.randfx{display:flex;flex-direction:column}
 .chip b{font-weight:900}
 .chip small{font-size:.72rem;opacity:.85}
 .cons{color:var(--muted);font-size:.92rem}
@@ -324,7 +325,8 @@ const ITEMS = {
   coffee:    { name: '雪印コーヒーサーバー',     stat: null,     text: '毎日の食料の消費量 −1' },
   trophy:    { name: 'トロフィー',               stat: 'wealth', text: '財産の最大値 +10' },
   guragura:  { name: 'あたしンちグラグラゲーム', stat: 'sat',    text: '満足度の最大値 +10' },
-  statue:    { name: 'ジミィ像',                 stat: 'sec',    text: '治安の最大値 +10' }
+  statue:    { name: 'ジミィ像',                 stat: 'sec',    text: '治安の最大値 +10' },
+  castle:    { name: '城',                       stat: null,     text: '治安の減少量 −1' }
 };
 
 /* Choice fields: label, desc, result[], fx{res,food,wealth,sat,sec}, item, disable, invest, cashout, when(S), end */
@@ -348,11 +350,11 @@ const EVENTS = [
     text: ['ハンムラビの軍勢が海を渡って島に上陸した。彼らは『金品を差し出さなければ我らの法に従い、この島を更地にする』と威嚇している！'],
     choices: [
       { label: '彼らに従い、金を渡す', desc: '命を失うくらいなら金を失った方がマシだ。',
-        result: ['彼らは満足そうに金品を受け取ると、戦車で海を渡っていった。'], fx: { wealth: -4, sec: 8 } },
+        result: ['彼らは満足そうに金品を受け取ると、戦車で海を渡っていった。'], fx: { wealth: -4, sec: 6 } },
       { label: '徹底抗戦する', desc: '多少血は流れるが、それも必要な犠牲だろう。',
-        result: ['あなたは死闘の末居住地を守り切った。'], fx: { res: -2, sec: -8 }, disable: true },
+        result: ['あなたは死闘の末居住地を守り切った。'], fx: { res: -2, sec: -6 }, disable: true },
       { label: '同等の対価として食料を渡す',
-        result: ['彼らは満足そうに雪印コーヒーを受け取ると、戦車で海を渡っていった。'], fx: { food: -4, sec: 8 } }
+        result: ['彼らは満足そうに雪印コーヒーを受け取ると、戦車で海を渡っていった。'], fx: { food: -4, sec: 6 } }
     ] },
 
   { id: 'ruins', title: '謎の古代遺跡の発見',
@@ -462,7 +464,7 @@ const EVENTS = [
     choices: [
       { label: '黙認する', result: ['黙っていればその団体から賄賂を貰えると知り、そのままにしておいた。'], fx: { wealth: 4, sat: -4 } },
       { label: '弾圧する', result: ['このような暴挙は黙って見ていられない。島から追い出そう。'], fx: { res: -2, sat: 4 } },
-      { label: '新しい宗教を作る', result: ['新しく宗教を作り、国教として定めた。これで悪さはしなくなるだろう。'], fx: { wealth: -4, sat: 4, sec: 4 }, disable: true }
+      { label: '新しい宗教を作る', result: ['新しく宗教を作り、国教として定めた。これで悪さはしなくなるだろう。'], fx: { wealth: -4, sat: 4, sec: 4 }, disable: true, religion: true }
     ] },
 
   { id: 'heli', title: 'ヘリコプター',
@@ -479,6 +481,58 @@ const EVENTS = [
       { label: '追い返す', result: ['そういう話には乗らないことにしている。'], fx: { wealth: 2 } },
       { label: '話に乗る', result: ['金を差し出した。これは詐欺かもしれないし、詐欺じゃないかもしれない。'], fx: { wealth: -4 }, invest: true },
       { label: '利益が返ってくる', result: ['話は本当だったようだ。'], fx: { wealth: 8 }, cashout: true, when: S => S.invested }
+    ] },
+
+  { id: 'trolley', title: 'トロッコ問題',
+    text: ['暴走した列車を止めなければならない。列車はこのままだと線路上の5人を轢いてしまう。', 'しかし、進路を切り替えれば轢かれるのは1人で済む。あなたの選択は────'],
+    choices: [
+      { label: '静観する', result: ['あなたは責任を負わずに済んだ。'], fx: { res: -5 } },
+      { label: '進路を切り替える', result: ['犠牲になる人数は少なく済んだ。しかし切り替えていなかったら死ななくて済んだ一人を殺したのはあなただ。'], fx: { res: -1, sat: -6 } },
+      { label: '列車を脱線させる', result: ['あなたは線路を巧みに切り替えると、列車を脱線させて全員を救うことに成功した。', 'しかし、線路は傷ついてしまった。'], fx: { wealth: -4 } }
+    ] },
+
+  { id: 'fishing', title: '漁業',
+    text: ['漁業従事者からの提言があった。『そろそろ本格的な漁を始めましょう！』'],
+    choices: [
+      { label: '従来の川釣りで充分だ', result: ['わざわざ危険を冒さなくてもいいだろう。'], fx: { food: 2 } },
+      { label: '遠洋でカニを獲ろう', result: ['カニは高値で売れた。しかし何人かは行方不明になったようだ。'], fx: { res: -2, wealth: 6 } },
+      { label: '遠洋でマグロを獲ろう', result: ['マグロが流通するようになった。しかし何人かは行方不明になったようだ。'], fx: { res: -2, food: 6 } }
+    ] },
+
+  { id: 'goldrush', title: 'ゴールドラッシュ',
+    text: ['住民の間でこの島には金鉱脈があるのではないかという噂が流れている。', 'それが本当であれば、誰よりも先に見つけなければならない。'],
+    choices: [
+      { label: '自力で探す', rand: [
+          { p: 0.75, result: ['あなたは単独で鉱脈を探した。しかしその努力は無駄に終わった。'], fx: { wealth: -2 } },
+          { p: 0.25, result: ['金鉱脈だ！他にも見つかるかもしれない！'], fx: { wealth: 10 } }
+        ] },
+      { label: 'ツルハシを住民に売る', result: ['あなたは確実に儲かる手段を取った。'], fx: { wealth: 2 } },
+      { label: '住民総出で探させる', result: ['金鉱脈を発見した。ただし成果は山分けなのであなたの取り分はかなり減った。'], fx: { wealth: 4 }, disable: true }
+    ] },
+
+  { id: 'reading', title: '読書',
+    text: ['あなたはいつか国家を作るために勉強することにした。'],
+    choices: [
+      { label: '「サルでもわかる独裁国家の作り方」を読む', result: ['君主としての立ち振る舞いをあなたは知った。'], fx: { wealth: 4, sat: -4, sec: 2 } },
+      { label: '「共産主義概論(上)」を読む', result: ['優秀な指導者の下に、民は団結しなければならないとあなたは知った。'], fx: { wealth: -4, sat: -2, sec: 6 } },
+      { label: '「無政府主義のススメ」を読む', result: ['新しい世界のあり方をあなたは知った。'], fx: { wealth: 2, sat: 4, sec: -6 } }
+    ] },
+
+  { id: 'sightseeing', title: '観光名所',
+    cond: S => !S.items.includes('castle'),
+    text: ['この島に観光名所を作りましょう！'],
+    choices: [
+      { label: '海辺を海水浴場に指定する', result: ['あまりコストはかからなかった。'], fx: { sat: 2 } },
+      { label: '立派な城を建てる', result: ['あなたの島はとても豪華になった。'], fx: { wealth: -10, sat: 6, sec: 6 }, item: 'castle', disable: true },
+      { label: 'モアイを彫る', result: ['石を切り出してモアイを作った。'], fx: { wealth: -4, sat: 4 } }
+    ] },
+
+  { id: 'meteor', title: '隕石', rare: true,
+    text: ['島に隕石が降ってきた。'],
+    choices: [
+      { label: '隕石を割る', result: ['中からエイリアンが出てきた。あなたはエイリアンを住民に加えることにした。'], fx: { res: 8 } },
+      { label: '隕石を売る', result: ['学者が高く買い取ってくれた。'], fx: { wealth: 8 } },
+      { label: '放っておく', result: ['危険だ。手を出すのはやめておこう。'], fx: { sec: 8 } }
     ] },
 
   { id: 'spiki', title: 'ｽﾋﾟｷ', rare: true,
@@ -505,6 +559,27 @@ const FORCED = [
     choices: [
       { label: '文明を創設する', result: ['あなたは文明を創設した。'], end: 'civ' }
     ] },
+  { id: 'religion', title: '宗教国家', forced: true,
+    cond: S => S.religion && S.sat >= 50,
+    text: ['住民の一人が提案してきた。『そろそろ我々の国を築き、世界へ栄光を示そう！』'],
+    choices: [
+      { label: '宗教国家を創設する', result: ['あなたは国家を創設した。'], end: 'happy' },
+      { label: '申し出を断る', result: ['あなたは申し出を断った。'], end: 'island' }
+    ] },
+  { id: 'richnation', title: '金満国家', forced: true,
+    cond: S => S.wealth >= 50,
+    text: ['住民の一人が提案してきた。『そろそろ我々の国を築き、世界へ栄光を示そう！』'],
+    choices: [
+      { label: '金満国家を創設する', result: ['あなたは国家を創設した。'], end: 'rich' },
+      { label: '申し出を断る', result: ['あなたは申し出を断った。'], end: 'island' }
+    ] },
+  { id: 'peacenation', title: '平和国家', forced: true,
+    cond: S => S.sec >= 50,
+    text: ['住民の一人が提案してきた。『そろそろ我々の国を築き、世界へ栄光を示そう！』'],
+    choices: [
+      { label: '平和国家を創設する', result: ['あなたは国家を創設した。'], end: 'peace' },
+      { label: '申し出を断る', result: ['あなたは申し出を断った。'], end: 'island' }
+    ] },
   { id: 'independence', title: 'ジミィ国独立宣言', forced: true,
     cond: S => S.res >= 30 && S.sat >= 30 && S.sec >= 30,
     text: ['住民の一人が提案してきた。『そろそろ我々の国を築き、世界へ栄光を示そう！』', 'あなたは──'],
@@ -530,26 +605,43 @@ const ENDINGS = {
   escape:   { name: '無人島脱出エンド', text: 'あなたは無人島から脱出した。他の住民は無事だろうか────' },
   kingdom:  { name: '王国建設エンド',   text: 'あなたはジミィ国を創設した。この功績は永久に称えられ、あなたの名は後世で語り継がれるだろう。' },
   dictator: { name: '独裁国家エンド',   text: 'あなたはジミィ国を創設した。あなたの意に反するものは処刑され、言論弾圧により住民の反発する声は次第に小さくなっていくだろう。' },
+  rich:     { name: '金満エンド',       text: 'あなたはジミィ国を創設した。あなたの財布は黄金で溢れ、もはやあなたに買えないものは無い。' },
+  happy:    { name: '幸福エンド',       text: 'あなたはジミィ国を創設した。市民は幸福で染まり、あなたを教祖として崇めている。' },
+  peace:    { name: '平和エンド',       text: 'あなたはジミィ国を創設した。ジミィ国から始まったこの平和の輪は、世界中に広がったという────' },
   civ:      { name: '文明エンド',       text: '我々の勢力はもはや国というより文明と呼ぶべき規模になった。この波はいずれ他の国家をも飲み込むだろう。' },
   island:   { name: '無人島エンド',     text: '我々はこの先も平和に無人島で生活していった────' }
 };
 const HINTS = [
   '住民、満足度、治安30以上の条件を満たして30日目を終えると…？',
+  '住民30以上、満足度、治安20以下の条件を満たして30日目を終えると…？',
   '住民が一定数に達すると毎ターンの食料の消費量が増えるぞ',
   '満足度と治安を上げる方法は限られているぞ',
-  '財産は0にならない限りエンディング分岐とは関係無いからじゃんじゃん使おう',
-  'イベント次第で特殊なアイテムが手に入るぞ',
-  'プレイしてくれてありがとう！'
+  'イベント次第で特殊なアイテムが手に入ることがあるぞ',
+  '宗教を創始した上で満足度50以上の条件を満たして30日目を終えると…？'
 ];
-const ENDING_ORDER =['island', 'escape', 'kingdom', 'dictator', 'civ', 'res', 'food', 'wealth', 'sat', 'sec'];
+const ENDING_ORDER =['island', 'escape', 'kingdom', 'dictator', 'rich', 'happy', 'peace', 'civ', 'res', 'food', 'wealth', 'sat', 'sec'];
 
 function newState() {
   return {
     day: 1, res: 10, food: 25, wealth: 25, sat: 25, sec: 25,
     max: { food: 50, wealth: 50, sat: 50, sec: 50 },
-    items: [], disabled: new Set(), invested: false,
+    items: [], disabled: new Set(), invested: false, religion: false,
     last: null, ev: null, vis: [], phase: 'choose', result: null
   };
+}
+
+/* 確率で結果が分かれる選択肢 */
+function rollRand(list) {
+  let r = Math.random();
+  for (const o of list) { r -= o.p; if (r < 0) return o; }
+  return list[list.length - 1];
+}
+
+/* 城があると、治安の減少量が1小さくなる */
+function effFx(S, fx) {
+  const o = Object.assign({}, fx || {});
+  if (o.sec < 0 && S.items.includes('castle')) o.sec = Math.min(0, o.sec + 1);
+  return o;
 }
 
 function consumption(S) {
@@ -582,7 +674,8 @@ function visibleChoices(S, ev) {
 
 /* Applies the chosen option, then the daily food cost, and reports what happened. */
 function resolve(S, index, timedOut) {
-  const c = S.vis[index];
+  const base = S.vis[index];
+  const c = base.rand ? Object.assign({}, base, rollRand(base.rand)) : base;
   const before = {};
   KEYS.forEach(k => { before[k] = S[k]; });
   const out = { choice: c, deltas: [], item: null, cons: 0, end: null, timedOut: !!timedOut };
@@ -594,10 +687,11 @@ function resolve(S, index, timedOut) {
     out.item = it;
   }
   if (c.invest) S.invested = true;
+  if (c.religion) S.religion = true;
   if (c.cashout) S.invested = false;
   if (c.disable || S.ev.once) S.disabled.add(S.ev.id);
 
-  const fx = c.fx || {};
+  const fx = effFx(S, c.fx);
   KEYS.forEach(k => {
     if (fx[k]) S[k] += fx[k];
     if (k !== 'res') S[k] = Math.min(S[k], S.max[k]);
@@ -697,12 +791,21 @@ function renderItems() {
 }
 
 /* 選ぶ前に、その選択肢で増減する数値を見せる */
-function fxPreview(c) {
-  const fx = c.fx || {};
-  const chips = KEYS.filter(k => fx[k]).map(k =>
+function fxChips(raw) {
+  const fx = effFx(S, raw);
+  return KEYS.filter(k => fx[k]).map(k =>
     '<li class="chip ' + (fx[k] > 0 ? 'up' : 'down') + '"><span>' + LABEL[k] + '</span><b>' +
     (fx[k] > 0 ? '+' : '−') + Math.abs(fx[k]) + '</b></li>'
   );
+}
+function fxPreview(c) {
+  if (c.rand) {
+    return '<div class="randfx">' + c.rand.map(o =>
+      '<ul class="chips fxs"><li class="chip none"><span>確率</span><b>' + Math.round(o.p * 100) + '%</b></li>' +
+      (fxChips(o.fx).join('') || '<li class="chip none"><span>変化なし</span></li>') + '</ul>'
+    ).join('') + '</div>';
+  }
+  const chips = fxChips(c.fx);
   if (c.item) {
     const it = ITEMS[c.item];
     chips.push('<li class="chip item"><span>' + it.name + '</span><b>' + it.text + '</b></li>');
